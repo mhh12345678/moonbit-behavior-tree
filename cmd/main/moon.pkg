@@ -1,0 +1,7 @@
+import {
+  "mhh12345678/behavior_tree" @lib
+}
+
+options(
+  "is-main": true,
+)
