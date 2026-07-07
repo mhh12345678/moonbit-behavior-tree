@@ -117,3 +117,52 @@ pub fn selector_node(children : Array[Node]) -> Node {
     }
   }
   Node::new(tick, reset)
+}
+
+pub(all) enum ParallelPolicy {
+  SuccessAll
+  SuccessOne
+} derive(Eq)
+
+// Parallel Node
+pub fn parallel_node(children : Array[Node], policy : ParallelPolicy) -> Node {
+  let tick = fn(bb) {
+    let mut success_count = 0
+    let mut failure_count = 0
+    let mut running_count = 0
+    for child in children {
+      let status = child.tick(bb)
+      match status {
+        Status::BTSuccess => success_count = success_count + 1
+        Status::BTFailure => failure_count = failure_count + 1
+        Status::BTRunning => running_count = running_count + 1
+      }
+    }
+    match policy {
+      ParallelPolicy::SuccessAll => {
+        if failure_count > 0 {
+          Status::BTFailure
+        } else if success_count == children.length() {
+          Status::BTSuccess
+        } else {
+          Status::BTRunning
+        }
+      }
+      ParallelPolicy::SuccessOne => {
+        if success_count > 0 {
+          Status::BTSuccess
+        } else if failure_count == children.length() {
+          Status::BTFailure
+        } else {
+          Status::BTRunning
+        }
+      }
+    }
+  }
+  let reset = fn() {
+    for c in children {
+      c.reset()
+    }
+  }
+  Node::new(tick, reset)
+}
